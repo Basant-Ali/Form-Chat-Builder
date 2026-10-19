@@ -57,11 +57,3 @@ npm run dev
 
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
-
----
-
-## 💡 How to Use the Embed Widget
-
-1. Go to your **User Dashboard**.
-2. Click on the **"Embed Code"** button next to any created form.
-3. Paste the generated HTML/iframe snippet into any external website to render the floating chatbot widget instantly.
