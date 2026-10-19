@@ -31,7 +31,6 @@ Follow these steps to run the project locally on your machine:
    git clone [https://github.com/YOUR_USERNAME/form-chat-builder.git](https://github.com/Basant-Ali/form-chat-builder.git)
    cd form-chat-builder
 
-```
 
 2. **Install dependencies:**
 ```bash
