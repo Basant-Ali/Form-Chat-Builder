@@ -27,14 +27,15 @@ A modern full-stack web application that allows users to create interactive form
 Follow these steps to run the project locally on your machine:
 
 1. **Clone the repository:**
-```bash
-git clone [https://github.com/YOUR_USERNAME/form-chat-builder.git](https://github.com/Basant-Ali/form-chat-builder.git)
-cd form-chat-builder
+  ```bash
+  git clone [https://github.com/YOUR_USERNAME/form-chat-builder.git](https://github.com/Basant-Ali/form-chat-builder.git)
+  cd form-chat-builder
 
+```
 
 2. **Install dependencies:**
-```bash
-npm install
+  ```bash
+  npm install
 
 ```
 
