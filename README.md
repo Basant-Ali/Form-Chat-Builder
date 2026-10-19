@@ -56,4 +56,4 @@ npm run dev
 ```
 
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+Open [https://form-chat-builder.vercel.app]((https://form-chat-builder.vercel.app)) in your browser to view the application.
