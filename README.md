@@ -28,7 +28,7 @@ Follow these steps to run the project locally on your machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/form-chat-builder.git](https://github.com/YOUR_USERNAME/form-chat-builder.git)
+   git clone [https://github.com/YOUR_USERNAME/form-chat-builder.git](https://github.com/Basant-Ali/form-chat-builder.git)
    cd form-chat-builder
 
 ```
@@ -50,7 +50,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 
 4. **Run the development server:**
-```bash
+```
 npm run dev
 
 ```
