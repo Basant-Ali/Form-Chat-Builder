@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase';
 interface Question {
   id: string;
   question_text: string;
-  question_type: 'text' | 'email' | 'multiple_choice' | 'yes_no';
-  options: string[]; // للاختيار من متعدد
+  question_type: 'text' | 'email' | 'multiple_choice' | 'yes_no' | 'dropdown' | 'rating' | 'date' | 'file';
+  options: string[]; // للاختيار من متعدد والقائمة المنسدلة
 }
 
 export default function FormBuilder() {
@@ -24,7 +24,7 @@ export default function FormBuilder() {
       id: Date.now().toString(),
       question_text: '',
       question_type: type,
-      options: type === 'multiple_choice' ? ['Option 1', 'Option 2'] : [],
+      options: (type === 'multiple_choice' || type === 'dropdown') ? ['Option 1', 'Option 2'] : [],
     };
     setQuestions([...questions, newQuestion]);
   };
@@ -36,7 +36,7 @@ export default function FormBuilder() {
     );
   };
 
-  // تحديث الخيارات لأسئلة الاختيار من متعدد
+  // تحديث الخيارات لأسئلة الاختيار من متعدد والقائمة المنسدلة
   const updateOption = (qId: string, optIndex: number, text: string) => {
     setQuestions(
       questions.map((q) => {
@@ -50,7 +50,7 @@ export default function FormBuilder() {
     );
   };
 
-  // إضافة خيار جديد في الاختيار من متعدد
+  // إضافة خيار جديد
   const addOption = (qId: string) => {
     setQuestions(
       questions.map((q) => {
@@ -178,8 +178,8 @@ export default function FormBuilder() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
 
-              {/* Options for Multiple Choice */}
-              {q.question_type === 'multiple_choice' && (
+              {/* Options for Multiple Choice or Dropdown */}
+              {(q.question_type === 'multiple_choice' || q.question_type === 'dropdown') && (
                 <div className="space-y-2 ml-4">
                   <p className="text-sm font-semibold text-gray-600 mb-2">Options:</p>
                   {q.options.map((opt, optIndex) => (
@@ -200,6 +200,17 @@ export default function FormBuilder() {
                     + Add Option
                   </button>
                 </div>
+              )}
+
+              {/* Helper text for new types */}
+              {q.question_type === 'rating' && (
+                <p className="text-xs text-gray-500 ml-4">Users will rate from 1 to 5 stars/points.</p>
+              )}
+              {q.question_type === 'date' && (
+                <p className="text-xs text-gray-500 ml-4">Users will select a date.</p>
+              )}
+              {q.question_type === 'file' && (
+                <p className="text-xs text-gray-500 ml-4">Users will be able to upload a file.</p>
               )}
             </div>
           ))}
@@ -232,6 +243,31 @@ export default function FormBuilder() {
               className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition"
             >
               + Yes / No
+            </button>
+            {/* الأنواع الجديدة المضافة */}
+            <button
+              onClick={() => addQuestion('dropdown')}
+              className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition"
+            >
+              + Dropdown
+            </button>
+            <button
+              onClick={() => addQuestion('rating')}
+              className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition"
+            >
+              + Rating
+            </button>
+            <button
+              onClick={() => addQuestion('date')}
+              className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition"
+            >
+              + Date
+            </button>
+            <button
+              onClick={() => addQuestion('file')}
+              className="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition"
+            >
+              + File Upload
             </button>
           </div>
         </div>

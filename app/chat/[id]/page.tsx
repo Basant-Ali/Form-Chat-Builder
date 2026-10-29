@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 interface Question {
   id: string;
   question_text: string;
-  question_type: 'text' | 'email' | 'multiple_choice' | 'yes_no';
+  question_type: 'text' | 'email' | 'multiple_choice' | 'yes_no' | 'dropdown' | 'rating' | 'date' | 'file';
   options: string[];
 }
 
@@ -24,7 +24,7 @@ function ChatContent() {
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
 
-  // إعادة ضبط الحالة (Reset State) عند فتح أو تغيير الـ formId
+  // جلب البيانات واستعادة المسودة المحفوظة إن وجدت
   useEffect(() => {
     if (formId) {
       setSubmitted(false);
@@ -34,6 +34,13 @@ function ChatContent() {
       fetchFormAndQuestions();
     }
   }, [formId]);
+
+  // ميزة الحفظ التلقائي (Autosave) عند تغير الإجابات
+  useEffect(() => {
+    if (formId && Object.keys(answers).length > 0 && !submitted) {
+      localStorage.setItem(`form_draft_${formId}`, JSON.stringify(answers));
+    }
+  }, [answers, formId, submitted]);
 
   async function fetchFormAndQuestions() {
     setLoading(true);
@@ -50,12 +57,34 @@ function ChatContent() {
       .select('*')
       .eq('form_id', formId);
 
-    if (qData) setQuestions(qData);
+    if (qData) {
+      setQuestions(qData);
+      
+      // التحقق من وجود مسودة سابقة (Draft Recovery)
+      const savedDraft = localStorage.getItem(`form_draft_${formId}`);
+      if (savedDraft) {
+        try {
+          const parsedDraft = JSON.parse(savedDraft);
+          if (confirm('Found a previously saved draft. Would you like to restore your progress?')) {
+            setAnswers(parsedDraft);
+            // تحديد المؤشر عند السؤال الأخير الذي تم الوصول إليه
+            const answeredKeys = Object.keys(parsedDraft);
+            if (answeredKeys.length > 0 && answeredKeys.length < qData.length) {
+              setCurrentIndex(answeredKeys.length);
+            }
+          } else {
+            localStorage.removeItem(`form_draft_${formId}`);
+          }
+        } catch (e) {
+          console.error('Error loading draft', e);
+        }
+      }
+    }
     setLoading(false);
   }
 
   const handleNext = async (answerValue: string) => {
-    if (!answerValue.trim()) {
+    if (!answerValue || !answerValue.trim()) {
       alert('Please provide an answer.');
       return;
     }
@@ -65,8 +94,18 @@ function ChatContent() {
     setAnswers(updatedAnswers);
     setCurrentInput('');
 
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex(currentIndex + 1);
+    // المنطق الشرطي (Conditional Logic): مثال لو الإجابة "No" في سؤال معين يمكن توجيهه أو الانتقال للسؤال التالي بشكل طبيعي
+    let nextIndex = currentIndex + 1;
+    
+    // مثال شرطي بسيط: إذا كان السؤال يحتوي على شرط معين (يمكن تخصيصه لاحقاً)
+    if (currentQ.question_text.toLowerCase().includes('other') && answerValue === 'No') {
+      // مثال: تخطي السؤال التالي لو الإجابة لا
+      // nextIndex += 1; 
+    }
+
+    // الانتقال للسؤال التالي أو الإنهاء
+    if (nextIndex < questions.length) {
+      setCurrentIndex(nextIndex);
     } else {
       await submitResponses(updatedAnswers);
     }
@@ -74,23 +113,41 @@ function ChatContent() {
 
   async function submitResponses(finalAnswers: Record<string, string>) {
     setLoading(true);
-    const { error } = await supabase.from('submissions').insert([
-      {
-        form_id: formId,
-        answers: finalAnswers,
-      },
-    ]);
+    try {
+      const response = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          form_id: formId,
+          answers: finalAnswers,
+        }),
+      });
 
-    setLoading(false);
-    if (!error) {
+      const textResponse = await response.text();
+      let result;
+      try {
+        result = textResponse ? JSON.parse(textResponse) : {};
+      } catch (e) {
+        throw new Error(`Server error or invalid response: ${textResponse || 'Empty response'}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error submitting answers.');
+      }
+
+      // مسح المسودة بعد نجاح الإرسال
+      localStorage.removeItem(`form_draft_${formId}`);
       setSubmitted(true);
-    } else {
-      alert('Error submitting answers.');
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      alert(err.message || 'Error submitting answers.');
+    } finally {
+      setLoading(false);
     }
   }
 
-  // إعادة بدء الاستبيان من جديد
   const handleRestart = () => {
+    localStorage.removeItem(`form_draft_${formId}`);
     setSubmitted(false);
     setCurrentIndex(0);
     setAnswers({});
@@ -118,13 +175,13 @@ function ChatContent() {
           <div className="space-y-3">
             <button
               onClick={handleRestart}
-              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition text-sm cursor-pointer"
             >
               Fill Out Again
             </button>
             <Link
               href="/dashboard"
-              className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm shadow-md"
+              className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition text-sm shadow-md text-center"
             >
               Back to Dashboard
             </Link>
@@ -185,13 +242,13 @@ function ChatContent() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleNext('Yes')}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow transition text-sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow transition text-sm cursor-pointer"
                 >
                   Yes
                 </button>
                 <button
                   onClick={() => handleNext('No')}
-                  className="bg-slate-200 hover:bg-slate-300 text-slate-800 py-3 rounded-xl font-semibold transition text-sm"
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-800 py-3 rounded-xl font-semibold transition text-sm cursor-pointer"
                 >
                   No
                 </button>
@@ -202,11 +259,77 @@ function ChatContent() {
                   <button
                     key={idx}
                     onClick={() => handleNext(opt)}
-                    className="w-full text-left px-4 py-3 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition font-medium text-slate-700 bg-slate-50/50 hover:text-indigo-600 text-sm"
+                    className="w-full text-left px-4 py-3 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition font-medium text-slate-700 bg-slate-50/50 hover:text-indigo-600 text-sm cursor-pointer"
                   >
                     {opt}
                   </button>
                 ))}
+              </div>
+            ) : currentQ?.question_type === 'dropdown' ? (
+              <div className="space-y-3">
+                <select
+                  value={currentInput}
+                  onChange={(e) => setCurrentInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm text-slate-800"
+                >
+                  <option value="">Select an option...</option>
+                  {currentQ.options.map((opt, idx) => (
+                    <option key={idx} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => handleNext(currentInput)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition text-sm shadow cursor-pointer"
+                >
+                  Confirm Selection
+                </button>
+              </div>
+            ) : currentQ?.question_type === 'rating' ? (
+              <div className="flex justify-center gap-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleNext(star.toString())}
+                    className="w-12 h-12 bg-slate-50 border border-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-slate-700 rounded-xl font-bold transition shadow-sm text-base flex items-center justify-center cursor-pointer"
+                  >
+                    ★ {star}
+                  </button>
+                ))}
+              </div>
+            ) : currentQ?.question_type === 'date' ? (
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={currentInput}
+                  onChange={(e) => setCurrentInput(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-sm text-slate-800"
+                />
+                <button
+                  onClick={() => handleNext(currentInput)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold transition text-sm shadow cursor-pointer"
+                >
+                  Submit Date
+                </button>
+              </div>
+            ) : currentQ?.question_type === 'file' ? (
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setCurrentInput(e.target.files[0].name);
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl bg-white text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                />
+                <button
+                  onClick={() => handleNext(currentInput || 'Uploaded File')}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition text-sm shadow cursor-pointer"
+                >
+                  Upload & Continue
+                </button>
               </div>
             ) : (
               <div className="flex gap-2">
@@ -220,7 +343,7 @@ function ChatContent() {
                 />
                 <button
                   onClick={() => handleNext(currentInput)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold transition text-sm shadow"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl font-semibold transition text-sm shadow cursor-pointer"
                 >
                   Send
                 </button>

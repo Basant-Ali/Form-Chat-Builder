@@ -4,3 +4,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ghacnwsexhm
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYWNud3NleGhtdXB3eGV4c2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMDA2MTQsImV4cCI6MjEwNzY3NjYxNH0.9GrnKuxTt0uFwOgT31qx6beu4PGXM2_1BtfprIgcEC0'
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
+
+export type QuestionType = 
+  | 'text' 
+  | 'email' 
+  | 'multiple_choice' 
+  | 'yes_no' 
+  | 'dropdown' 
+  | 'rating' 
+  | 'date' 
+  | 'file';
